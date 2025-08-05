@@ -124,17 +124,17 @@ class Linear:
             value = tf.convert_to_tensor(value, dtype=tf.float32)
         self._b.assign(value)
 
+# Test the Linear layer implementation
+# if __name__ == "__main__":
+#     layer = Linear(input_size=3, output_size=2)
 
-if __name__ == "__main__":
-    layer = Linear(input_size=3, output_size=2)
+#     # Create dummy input: batch of 4 samples, each with 3 features
+#     x = tf.random.normal((4, 3))
 
-    # Create dummy input: batch of 4 samples, each with 3 features
-    x = tf.random.normal((4, 3))
+#     # Forward pass
+#     output = layer(x)
 
-    # Forward pass
-    output = layer(x)
-
-    print("Input:\n", x.numpy())
-    print("Output:\n", output.numpy())
-    print("Weights:\n", layer.W.numpy())
-    print("Biases:\n", layer.b.numpy())
+#     print("Input:\n", x.numpy())
+#     print("Output:\n", output.numpy())
+#     print("Weights:\n", layer.W.numpy())
+#     print("Biases:\n", layer.b.numpy())
