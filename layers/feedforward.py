@@ -32,6 +32,32 @@ class Linear:
                               dtype=tf.float32, trainable=True, name="bias")
         self.activation = activation
 
+    def _get_activation_function(self, name):
+        """
+        Maps the activation name to the corresponding function class.
+
+        Args:
+            name (str): Name of the activation function.
+
+        Returns:
+            Callable: Activation function object.
+
+        Raises:
+            ValueError: If activation name is unsupported.
+        """
+        if name == "ReLU":
+            return activations.ReLU()
+        elif name == "LeakyReLU":
+            return activations.LeakyReLU()
+        elif name == "Sigmoid":
+            return activations.Sigmoid()
+        elif name == "Tanh":
+            return activations.Tanh()
+        elif name == "Softmax":
+            return activations.Softmax()
+        else:
+            raise ValueError(f"Unsupported activation function: {name}")
+    
     def __call__(self, x):
         """
         Enables the layer to be called like a function.
@@ -63,18 +89,7 @@ class Linear:
         Returns:
             tf.Tensor: Output of shape (batch_size, output_size).
         """
-        if self.activation == "ReLU":
-            activation_fn = activations.ReLU()
-        elif self.activation == "LeakyReLU":
-            activation_fn = activations.LeakyReLU()
-        elif self.activation == "Sigmoid":
-            activation_fn = activations.Sigmoid()
-        elif self.activation == "Tanh":
-            activation_fn = activations.Tanh()
-        elif self.activation == "Softmax":
-            activation_fn = activations.Softmax()
-        else:
-            raise ValueError(f"Unsupported activation function: {self.activation}")
+        activation_fn = self._get_activation_function(self.activation)
         if not isinstance(x, tf.Tensor):
             x = tf.convert_to_tensor(x, dtype=tf.float32)
         return activation_fn(tf.matmul(x, self._W) + self._b)
