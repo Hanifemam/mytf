@@ -1,4 +1,5 @@
 import tensorflow as tf
+import activations
 
 class Linear:
     """
@@ -15,7 +16,7 @@ class Linear:
         _b (tf.Variable): The bias vector of shape (output_size,).
     """
 
-    def __init__(self, input_size, output_size):
+    def __init__(self, input_size, output_size, activation="ReLU"):
         """
         Initializes the Linear layer with random weights and biases.
 
@@ -29,6 +30,7 @@ class Linear:
                               dtype=tf.float32, trainable=True, name="weights")
         self._b = tf.Variable(tf.random.normal((output_size,)),
                               dtype=tf.float32, trainable=True, name="bias")
+        self.activation = activation
 
     def __call__(self, x):
         """
@@ -61,9 +63,21 @@ class Linear:
         Returns:
             tf.Tensor: Output of shape (batch_size, output_size).
         """
+        if self.activation == "ReLU":
+            activation_fn = activations.ReLU()
+        elif self.activation == "LeakyReLU":
+            activation_fn = activations.LeakyReLU()
+        elif self.activation == "Sigmoid":
+            activation_fn = activations.Sigmoid()
+        elif self.activation == "Tanh":
+            activation_fn = activations.Tanh()
+        elif self.activation == "Softmax":
+            activation_fn = activations.Softmax()
+        else:
+            raise ValueError(f"Unsupported activation function: {self.activation}")
         if not isinstance(x, tf.Tensor):
             x = tf.convert_to_tensor(x, dtype=tf.float32)
-        return tf.matmul(x, self._W) + self._b
+        return activation_fn(tf.matmul(x, self._W) + self._b)
 
     def parameters(self):
         """
@@ -125,16 +139,17 @@ class Linear:
         self._b.assign(value)
 
 # Test the Linear layer implementation
-# if __name__ == "__main__":
-#     layer = Linear(input_size=3, output_size=2)
+if __name__ == "__main__":
+    layer = Linear(input_size=3, output_size=2, activation="Sigmoid")
 
-#     # Create dummy input: batch of 4 samples, each with 3 features
-#     x = tf.random.normal((4, 3))
+    # Create dummy input: batch of 4 samples, each with 3 features
+    x = tf.random.normal((4, 3))
 
-#     # Forward pass
-#     output = layer(x)
+    # Forward pass
+    output = layer(x)
 
-#     print("Input:\n", x.numpy())
-#     print("Output:\n", output.numpy())
-#     print("Weights:\n", layer.W.numpy())
-#     print("Biases:\n", layer.b.numpy())
+    print("Input:\n", x.numpy())
+    print("Output:\n", output.numpy())
+    print("Weights:\n", layer.W.numpy())
+    print("Weights shape:", layer.W.shape)
+    print("Biases:\n", layer.b.numpy())
