@@ -1,5 +1,4 @@
 import tensorflow as tf
-import activations
 
 class Linear:
     """
@@ -30,33 +29,7 @@ class Linear:
                               dtype=tf.float32, trainable=True, name="weights")
         self._b = tf.Variable(tf.random.normal((output_size,)),
                               dtype=tf.float32, trainable=True, name="bias")
-        self.activation = activation
 
-    def _get_activation_function(self, name):
-        """
-        Maps the activation name to the corresponding function class.
-
-        Args:
-            name (str): Name of the activation function.
-
-        Returns:
-            Callable: Activation function object.
-
-        Raises:
-            ValueError: If activation name is unsupported.
-        """
-        if name == "ReLU":
-            return activations.ReLU()
-        elif name == "LeakyReLU":
-            return activations.LeakyReLU()
-        elif name == "Sigmoid":
-            return activations.Sigmoid()
-        elif name == "Tanh":
-            return activations.Tanh()
-        elif name == "Softmax":
-            return activations.Softmax()
-        else:
-            raise ValueError(f"Unsupported activation function: {name}")
     
     def __call__(self, x):
         """
@@ -89,11 +62,11 @@ class Linear:
         Returns:
             tf.Tensor: Output of shape (batch_size, output_size).
         """
-        activation_fn = self._get_activation_function(self.activation)
         if not isinstance(x, tf.Tensor):
             x = tf.convert_to_tensor(x, dtype=tf.float32)
-        return activation_fn(tf.matmul(x, self._W) + self._b)
-
+        return tf.matmul(x, self._W) + self._b
+    
+    @property
     def parameters(self):
         """
         Returns the trainable parameters of the layer.
