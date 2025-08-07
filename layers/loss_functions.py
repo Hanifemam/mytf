@@ -102,37 +102,34 @@ def SparseCategoricalCrossEntropy(predictions, targets, epsilon=1e-7):
     return tf.reduce_mean(loss)
 
 
-import tensorflow as tf
+# # === 1. MSELoss (regression)
+# print("=== MSELoss ===")
+# preds = tf.constant([[0.5], [0.2], [0.9]], dtype=tf.float32)
+# targets = tf.constant([[1.0], [0.0], [1.0]], dtype=tf.float32)
+# print("MSE Loss:", MSELoss(preds, targets).numpy())
 
+# # === 2. MAELoss (regression)
+# print("\n=== MAELoss ===")
+# print("MAE Loss:", MAELoss(preds, targets).numpy())
 
-# === 1. MSELoss (regression)
-print("=== MSELoss ===")
-preds = tf.constant([[0.5], [0.2], [0.9]], dtype=tf.float32)
-targets = tf.constant([[1.0], [0.0], [1.0]], dtype=tf.float32)
-print("MSE Loss:", MSELoss(preds, targets).numpy())
+# # === 3. BCELoss (binary classification)
+# print("\n=== BCELoss ===")
+# preds_bce = tf.constant([[0.9], [0.2], [0.6]], dtype=tf.float32)
+# targets_bce = tf.constant([[1.0], [0.0], [1.0]], dtype=tf.float32)
+# print("BCE Loss:", BCELoss(preds_bce, targets_bce).numpy())
 
-# === 2. MAELoss (regression)
-print("\n=== MAELoss ===")
-print("MAE Loss:", MAELoss(preds, targets).numpy())
+# # === 4. CrossEntropyLoss (multi-class, one-hot labels)
+# print("\n=== CrossEntropyLoss ===")
+# preds_ce = tf.constant([[0.1, 0.7, 0.2], [0.8, 0.1, 0.1]], dtype=tf.float32)
+# targets_ce = tf.constant([[0, 1, 0], [1, 0, 0]], dtype=tf.float32)
+# print("Cross Entropy Loss:", CrossEntropyLoss(preds_ce, targets_ce).numpy())
 
-# === 3. BCELoss (binary classification)
-print("\n=== BCELoss ===")
-preds_bce = tf.constant([[0.9], [0.2], [0.6]], dtype=tf.float32)
-targets_bce = tf.constant([[1.0], [0.0], [1.0]], dtype=tf.float32)
-print("BCE Loss:", BCELoss(preds_bce, targets_bce).numpy())
-
-# === 4. CrossEntropyLoss (multi-class, one-hot labels)
-print("\n=== CrossEntropyLoss ===")
-preds_ce = tf.constant([[0.1, 0.7, 0.2], [0.8, 0.1, 0.1]], dtype=tf.float32)
-targets_ce = tf.constant([[0, 1, 0], [1, 0, 0]], dtype=tf.float32)
-print("Cross Entropy Loss:", CrossEntropyLoss(preds_ce, targets_ce).numpy())
-
-# === 5. SparseCategoricalCrossEntropy (multi-class, integer labels)
-print("\n=== SparseCategoricalCrossEntropy ===")
-targets_sparse = tf.constant(
-    [1, 0], dtype=tf.int32
-)  # same labels as above, but not one-hot
-print(
-    "Sparse Cross Entropy Loss:",
-    SparseCategoricalCrossEntropy(preds_ce, targets_sparse).numpy(),
-)
+# # === 5. SparseCategoricalCrossEntropy (multi-class, integer labels)
+# print("\n=== SparseCategoricalCrossEntropy ===")
+# targets_sparse = tf.constant(
+#     [1, 0], dtype=tf.int32
+# )  # same labels as above, but not one-hot
+# print(
+#     "Sparse Cross Entropy Loss:",
+#     SparseCategoricalCrossEntropy(preds_ce, targets_sparse).numpy(),
+# )
