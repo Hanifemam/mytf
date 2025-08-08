@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+
 class Linear:
     """
     A custom implementation of a fully connected (dense) linear layer.
@@ -25,12 +26,19 @@ class Linear:
         """
         self.input_size = input_size
         self.output_size = output_size
-        self._W = tf.Variable(tf.random.normal((input_size, output_size)),
-                              dtype=tf.float32, trainable=True, name="weights")
-        self._b = tf.Variable(tf.random.normal((output_size,)),
-                              dtype=tf.float32, trainable=True, name="bias")
+        self._W = tf.Variable(
+            tf.random.normal((input_size, output_size)),
+            dtype=tf.float32,
+            trainable=True,
+            name="weights",
+        )
+        self._b = tf.Variable(
+            tf.random.normal((output_size,)),
+            dtype=tf.float32,
+            trainable=True,
+            name="bias",
+        )
 
-    
     def __call__(self, x):
         """
         Enables the layer to be called like a function.
@@ -65,7 +73,7 @@ class Linear:
         if not isinstance(x, tf.Tensor):
             x = tf.convert_to_tensor(x, dtype=tf.float32)
         return tf.matmul(x, self._W) + self._b
-    
+
     @property
     def parameters(self):
         """
@@ -126,14 +134,12 @@ class Linear:
             value = tf.convert_to_tensor(value, dtype=tf.float32)
         self._b.assign(value)
 
+
 # Test the Linear layer implementation
 if __name__ == "__main__":
     layer = Linear(input_size=3, output_size=2, activation="Sigmoid")
 
-    # Create dummy input: batch of 4 samples, each with 3 features
     x = tf.random.normal((4, 3))
-
-    # Forward pass
     output = layer(x)
 
     print("Input:\n", x.numpy())

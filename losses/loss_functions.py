@@ -69,9 +69,6 @@ def CrossEntropyLoss(predictions, targets, epsilon=1e-7):
     return tf.reduce_mean(tf.reduce_sum(-targets * tf.math.log(predictions), axis=1))
 
 
-import tensorflow as tf
-
-
 def SparseCategoricalCrossEntropy(predictions, targets, epsilon=1e-7):
     """
     Computes the Sparse Categorical Cross Entropy loss.
@@ -84,21 +81,12 @@ def SparseCategoricalCrossEntropy(predictions, targets, epsilon=1e-7):
     Returns:
         tf.Tensor: Scalar tensor representing the average cross entropy loss.
     """
-    # Ensure predictions are clipped to avoid log(0)
     predictions = tf.clip_by_value(predictions, epsilon, 1 - epsilon)
-
-    # Convert class indices to log-probabilities at the correct index
-    # predictions[batch_index, target_class]
     batch_indices = tf.range(tf.shape(targets)[0])
-    indices = tf.stack([batch_indices, targets], axis=1)  # shape: (batch_size, 2)
-
-    # Gather the correct class probabilities
-    true_probs = tf.gather_nd(predictions, indices)  # shape: (batch_size,)
-
-    # Compute -log(p)
+    indices = tf.stack([batch_indices, targets], axis=1)
+    true_probs = tf.gather_nd(predictions, indices)
     loss = -tf.math.log(true_probs)
 
-    # Return average loss
     return tf.reduce_mean(loss)
 
 
