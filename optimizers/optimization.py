@@ -52,22 +52,17 @@ class Optimization:
         return self.model.parameters()
 
 
-# Dummy input and output data
-X = tf.random.normal((10, 3))  # 10 samples, 3 features
-y = tf.random.normal((10, 1))  # 10 targets
+X = tf.random.normal((10, 3))
+y = tf.random.normal((10, 1))
 
-# Define a simple model
 model = Sequence(Linear(3, 4), Linear(4, 1))
 
-# Create optimizer instance
 optimizer = Optimization(
     model=model, X=X, y=y, epochs=5, loss_function=MSELoss, learning_rate=0.01
 )
 
-# Run training
 final_params = optimizer.SGD()
 
-# Print final weights
 print("\nFinal Parameters:")
 for param in final_params:
     print(param.numpy())
