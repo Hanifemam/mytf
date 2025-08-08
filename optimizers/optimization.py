@@ -45,7 +45,7 @@ class Optimization:
             grads = tape.gradient(loss, parameters)
 
             for param, grad in zip(parameters, grads):
-                param.assign_sub(param + self.learning_rate * grad)
+                param.assign_sub(param - self.learning_rate * grad)
 
             print(f"Epoch {i+1}: Loss = {loss.numpy():.4f}")
 
