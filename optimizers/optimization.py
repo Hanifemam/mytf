@@ -1,6 +1,7 @@
 import tensorflow as tf
 import sys
 import os
+import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -51,6 +52,10 @@ class Optimization:
         # Fix params list once so velocities line up with params
         params = list(self.model.parameters())
         momentum_velocities = [tf.zeros_like(p) for p in params]
+
+        if self.learning_rate_type == "linear":
+            lr_schedule = self.linear_lr_schedule(total_steps=self.epochs)
+
         for i in range(self.epochs):
             with tf.GradientTape() as tape:
                 prediction = self.model(self.X)
@@ -71,6 +76,10 @@ class Optimization:
                         momentum * momentum_velocities[idx] - self.learning_rate * grad
                     )
                     param.assign_add(momentum_velocities[idx])
+            elif self.learning_rate_type == "linear":
+                lr_t = float(lr_schedule[i])
+                for param, grad in zip(params, grads):
+                    param.assign_sub(lr_t * grad)
             else:
                 raise ValueError(
                     f"Unknown learning_rate_type: {self.learning_rate_type}"
@@ -80,6 +89,34 @@ class Optimization:
 
         return self.model.parameters()
 
+    def linear_lr_schedule(
+        self, total_steps, base_lr=1e-3, end_frac=0.01, warmup_ratio=0.05
+    ):
+        # Robust guards
+        total_steps = max(int(total_steps), 1)
+        warmup_steps = max(int(round(total_steps * warmup_ratio)), 0)
+        min_lr = base_lr * end_frac
+        decay_steps = max(total_steps - warmup_steps, 1)
+
+        lrs = []
+        for t in range(total_steps):
+            if warmup_steps > 0 and t < warmup_steps:
+                # Linear warmup 0 -> base_lr (use t+1 to avoid 0 when desired)
+                lr = base_lr * ((t + 1) / warmup_steps)
+            else:
+                # Linear decay base_lr -> min_lr
+                progress = (t - warmup_steps) / decay_steps
+                progress = min(max(progress, 0.0), 1.0)
+                lr = base_lr - progress * (base_lr - min_lr)
+            lrs.append(lr)
+        return np.array(lrs, dtype=np.float32)
+
+    def power_law_lr_schedule():
+        pass
+
+    def exponential_lr_schedule():
+        pass
+
 
 X = tf.random.normal((10, 3))
 y = tf.random.normal((10, 1))
@@ -87,9 +124,14 @@ y = tf.random.normal((10, 1))
 model = Sequence(Linear(3, 4), Linear(4, 1))
 
 optimizer = Optimization(
-    model=model, X=X, y=y, epochs=5, loss_function=MSELoss, learning_rate=0.01
+    model=model,
+    X=X,
+    y=y,
+    epochs=10,
+    loss_function=MSELoss,
+    learning_rate=0.01,
+    learning_rate_type="linear",
 )
-
 final_params = optimizer.SGD()
 
 print("\nFinal Parameters:")
