@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 
 class Linear:
@@ -26,14 +27,16 @@ class Linear:
         """
         self.input_size = input_size
         self.output_size = output_size
+        mean = 0.0
+        std = np.sqrt(2.0 / (input_size))
         self._W = tf.Variable(
-            tf.random.normal((input_size, output_size)),
+            tf.random.normal((input_size, output_size), mean, std),
             dtype=tf.float32,
             trainable=True,
             name="weights",
         )
         self._b = tf.Variable(
-            tf.random.normal((output_size,)),
+            tf.random.normal((output_size,), mean, std),
             dtype=tf.float32,
             trainable=True,
             name="bias",

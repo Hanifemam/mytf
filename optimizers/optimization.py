@@ -21,13 +21,23 @@ class Optimization:
     Optimization class for training a model using SGD.
     """
 
-    def __init__(self, model, X, y, epochs, loss_function, learning_rate):
+    def __init__(
+        self,
+        model,
+        X,
+        y,
+        epochs,
+        loss_function,
+        learning_rate,
+        learning_rate_type="constant",
+    ):
         self.model = model
         self.X = X
         self.y = y
         self.epochs = epochs
         self.loss_function = loss_function
         self.learning_rate = learning_rate
+        self.learning_rate_type = learning_rate_type
 
     def SGD(self):
         """
@@ -36,6 +46,11 @@ class Optimization:
         Returns:
             list: The final model parameters (weights and biases).
         """
+        momentum = 0.9
+
+        # Fix params list once so velocities line up with params
+        params = list(self.model.parameters())
+        momentum_velocities = [tf.zeros_like(p) for p in params]
         for i in range(self.epochs):
             with tf.GradientTape() as tape:
                 prediction = self.model(self.X)
@@ -43,9 +58,23 @@ class Optimization:
 
             parameters = self.model.parameters()
             grads = tape.gradient(loss, parameters)
-
-            for param, grad in zip(parameters, grads):
-                param.assign_sub(param - self.learning_rate * grad)
+            if self.learning_rate_type == "constant":
+                for param, grad in zip(parameters, grads):
+                    if grad is None:
+                        continue
+                    param.assign_sub(self.learning_rate * grad)
+            elif self.learning_rate_type == "momentum":
+                for idx, (param, grad) in enumerate(zip(params, grads)):
+                    if grad is None:
+                        continue
+                    momentum_velocities[idx] = (
+                        momentum * momentum_velocities[idx] - self.learning_rate * grad
+                    )
+                    param.assign_add(momentum_velocities[idx])
+            else:
+                raise ValueError(
+                    f"Unknown learning_rate_type: {self.learning_rate_type}"
+                )
 
             print(f"Epoch {i+1}: Loss = {loss.numpy():.4f}")
 
