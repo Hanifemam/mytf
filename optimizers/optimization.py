@@ -76,10 +76,10 @@ class Optimization:
                     )
                     param.assign_add(momentum_velocities[idx])
             elif self.learning_rate_type == "linear":
-                if grad is None:
-                    continue
                 lr_t = float(lr_schedule[i])
                 for param, grad in zip(parameters, grads):
+                    if grad is None:
+                        continue
                     param.assign_sub(lr_t * grad)
 
             elif self.learning_rate_type == "adagrad":
@@ -100,7 +100,10 @@ class Optimization:
                 if i == 0:
                     init_acc = 0.1
                     accumulators = [
-                        tf.Variable(tf.fill(tf.shape(p), init_acc), trainable=False)
+                        tf.Variable(
+                            tf.fill(tf.shape(p), tf.cast(init_acc, p.dtype)),
+                            trainable=False,
+                        )
                         for p in parameters
                     ]
                 else:
@@ -110,6 +113,44 @@ class Optimization:
                         continue
                     lr = self.learning_rate / (tf.sqrt(accumulators[idx]) + 1e-8)
                     param.assign_sub(lr * grad)
+            elif self.learning_rate_type == "Adam":
+                if i == 0:
+                    init_acc = 0.0
+                    momentum_velocities = [
+                        tf.Variable(
+                            tf.fill(tf.shape(p), init_acc),
+                            trainable=False,
+                            dtype=tf.float32,
+                        )
+                        for p in parameters
+                    ]
+
+                    accumulators = [
+                        tf.Variable(
+                            tf.fill(tf.shape(p), init_acc),
+                            trainable=False,
+                            dtype=tf.float32,
+                        )
+                        for p in parameters
+                    ]
+
+                    lr_correction = self.Adam(
+                        grads,
+                        accumulators,
+                        momentum_velocities,
+                        tf.cast(i + 1, tf.float32),
+                    )
+                else:
+                    lr_correction = self.Adam(
+                        grads,
+                        accumulators,
+                        momentum_velocities,
+                        tf.cast(i + 1, tf.float32),
+                    )
+                for param, corr in zip(parameters, lr_correction):
+                    if corr is None:
+                        continue
+                    param.assign_sub(corr * self.learning_rate)
 
             else:
                 raise ValueError(
@@ -164,6 +205,38 @@ class Optimization:
             ) * tf.square(g)
         return accumulators
 
+    def Adam(
+        self,
+        grads,
+        accumulators,
+        momentum_velocities,
+        time_round,  # t (use i+1 when calling)
+        decay_rate_momentum=0.9,  # β1
+        decay_rate_suare=0.999,  # β2  (kept your name, value fixed)
+        delta=1e-8,
+    ):
+        learning_rate_correction = []
+        for i, g in enumerate(grads):
+            if g is None:
+                learning_rate_correction.append(None)
+                continue
+            momentum_velocities[i].assign(
+                decay_rate_momentum * momentum_velocities[i]
+                + (1 - decay_rate_momentum) * g
+            )
+
+            accumulators[i].assign(
+                decay_rate_suare * accumulators[i]
+                + (1.0 - decay_rate_suare) * tf.square(g)
+            )
+            m_hat = momentum_velocities[i] / (
+                1.0 - tf.pow(decay_rate_momentum, time_round)
+            )
+            v_hat = accumulators[i] / (1.0 - tf.pow(decay_rate_suare, time_round))
+            learning_rate_correction.append(m_hat / (tf.sqrt(v_hat) + delta))
+
+        return learning_rate_correction
+
 
 X = tf.random.normal((10, 3))
 y = tf.random.normal((10, 1))
@@ -177,7 +250,7 @@ optimizer = Optimization(
     epochs=10,
     loss_function=MSELoss,
     learning_rate=0.01,
-    learning_rate_type="RMSProp",
+    learning_rate_type="Adam",
 )
 final_params = optimizer.SGD()
 
