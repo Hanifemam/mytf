@@ -89,6 +89,22 @@ class Optimization:
                         tf.Variable(tf.fill(tf.shape(p), init_acc), trainable=False)
                         for p in parameters
                     ]
+                else:
+                    self.adagrad(grads, accumulators)
+                for idx, (param, grad) in enumerate(zip(parameters, grads)):
+                    if grad is None:
+                        continue
+                    lr = self.learning_rate / (tf.sqrt(accumulators[idx]) + 1e-8)
+                    param.assign_sub(lr * grad)
+            elif self.learning_rate_type == "RMSProp":
+                if i == 0:
+                    init_acc = 0.1
+                    accumulators = [
+                        tf.Variable(tf.fill(tf.shape(p), init_acc), trainable=False)
+                        for p in parameters
+                    ]
+                else:
+                    self.RMSProp(grads, accumulators)
                 for idx, (param, grad) in enumerate(zip(parameters, grads)):
                     if grad is None:
                         continue
@@ -139,6 +155,15 @@ class Optimization:
             accumulators[i].assign_add(tf.square(g))  # persistent, in-place
         return accumulators
 
+    def RMSProp(self, grads, accumulators, decay_rate=0.9):
+        for i, g in enumerate(grads):
+            if g is None:
+                continue
+            accumulators[i] = decay_rate * accumulators[i] + (
+                1 - decay_rate
+            ) * tf.square(g)
+        return accumulators
+
 
 X = tf.random.normal((10, 3))
 y = tf.random.normal((10, 1))
@@ -152,7 +177,7 @@ optimizer = Optimization(
     epochs=10,
     loss_function=MSELoss,
     learning_rate=0.01,
-    learning_rate_type="adagrad",
+    learning_rate_type="RMSProp",
 )
 final_params = optimizer.SGD()
 
