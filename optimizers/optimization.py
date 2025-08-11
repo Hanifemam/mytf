@@ -48,10 +48,9 @@ class Optimization:
             list: The final model parameters (weights and biases).
         """
         momentum = 0.9
-
+        accumulators = []
         # Fix params list once so velocities line up with params
-        params = list(self.model.parameters())
-        momentum_velocities = [tf.zeros_like(p) for p in params]
+        momentum_velocities = [tf.zeros_like(p) for p in list(self.model.parameters())]
 
         if self.learning_rate_type == "linear":
             lr_schedule = self.linear_lr_schedule(total_steps=self.epochs)
@@ -69,7 +68,7 @@ class Optimization:
                         continue
                     param.assign_sub(self.learning_rate * grad)
             elif self.learning_rate_type == "momentum":
-                for idx, (param, grad) in enumerate(zip(params, grads)):
+                for idx, (param, grad) in enumerate(zip(parameters, grads)):
                     if grad is None:
                         continue
                     momentum_velocities[idx] = (
@@ -77,9 +76,25 @@ class Optimization:
                     )
                     param.assign_add(momentum_velocities[idx])
             elif self.learning_rate_type == "linear":
+                if grad is None:
+                    continue
                 lr_t = float(lr_schedule[i])
-                for param, grad in zip(params, grads):
+                for param, grad in zip(parameters, grads):
                     param.assign_sub(lr_t * grad)
+
+            elif self.learning_rate_type == "adagrad":
+                if i == 0:
+                    init_acc = 0.1
+                    accumulators = [
+                        tf.Variable(tf.fill(tf.shape(p), init_acc), trainable=False)
+                        for p in parameters
+                    ]
+                for idx, (param, grad) in enumerate(zip(parameters, grads)):
+                    if grad is None:
+                        continue
+                    lr = self.learning_rate / (tf.sqrt(accumulators[idx]) + 1e-8)
+                    param.assign_sub(lr * grad)
+
             else:
                 raise ValueError(
                     f"Unknown learning_rate_type: {self.learning_rate_type}"
@@ -111,11 +126,18 @@ class Optimization:
             lrs.append(lr)
         return np.array(lrs, dtype=np.float32)
 
-    def power_law_lr_schedule():
+    def power_law_lr_schedule(self):
         pass
 
-    def exponential_lr_schedule():
+    def exponential_lr_schedule(self):
         pass
+
+    def adagrad(self, grads, accumulators):
+        for i, g in enumerate(grads):
+            if g is None:
+                continue
+            accumulators[i].assign_add(tf.square(g))  # persistent, in-place
+        return accumulators
 
 
 X = tf.random.normal((10, 3))
@@ -130,7 +152,7 @@ optimizer = Optimization(
     epochs=10,
     loss_function=MSELoss,
     learning_rate=0.01,
-    learning_rate_type="linear",
+    learning_rate_type="adagrad",
 )
 final_params = optimizer.SGD()
 
