@@ -4,12 +4,11 @@ import numpy as np
 import tensorflow as tf
 
 
-class Normalization(tf.keras.layers.Layer):
-    def __init__(self, epsilon=1e-7, name=None):
-        super().__init__(name=name)
-        self.epsilon = epsilon
+class Normalization:
+    def __init__(self):
+        self.epsilon = 1e-8
 
-    def call(self, x):
+    def __call__(self, x):
         x = tf.cast(x, tf.float32)
         mean = tf.reduce_mean(x, axis=0, keepdims=True)
         std = tf.math.reduce_std(x, axis=0, keepdims=True)
