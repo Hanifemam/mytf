@@ -157,23 +157,23 @@ class BatchNormalization:
 
         self._W = tf.Variable(
             tf.ones((self.input_size,), dtype=tf.float32),  # gamma
-            trainable=True,
+            requires_grad=True,
             name="gamma",
         )
         self._b = tf.Variable(
             tf.zeros((self.input_size,), dtype=tf.float32),  # beta
-            trainable=True,
+            requires_grad=True,
             name="beta",
         )
 
         self.moving_mean = tf.Variable(
             tf.zeros((self.input_size,), dtype=tf.float32),
-            trainable=False,
+            requires_grad=False,
             name="moving_mean",
         )
         self.moving_var = tf.Variable(
             tf.ones((self.input_size,), dtype=tf.float32),
-            trainable=False,
+            requires_grad=False,
             name="moving_var",
         )
 
