@@ -157,23 +157,23 @@ class BatchNormalization:
 
         self._W = tf.Variable(
             tf.ones((self.input_size,), dtype=tf.float32),  # gamma
-            requires_grad=True,
+            trainable=True,
             name="gamma",
         )
         self._b = tf.Variable(
             tf.zeros((self.input_size,), dtype=tf.float32),  # beta
-            requires_grad=True,
+            trainable=True,
             name="beta",
         )
 
         self.moving_mean = tf.Variable(
             tf.zeros((self.input_size,), dtype=tf.float32),
-            requires_grad=False,
+            trainable=False,
             name="moving_mean",
         )
         self.moving_var = tf.Variable(
             tf.ones((self.input_size,), dtype=tf.float32),
-            requires_grad=False,
+            trainable=False,
             name="moving_var",
         )
 
@@ -235,6 +235,78 @@ class BatchNormalization:
         self._b.assign(value)
 
 
+import tensorflow as tf
+
+
+class LayerNormalization:
+    """
+    Layer Normalization for 2D inputs shaped (N, F).
+    Keeps your original API: _W (gamma), _b (beta), parameters, W/b properties.
+    """
+
+    def __init__(self, input_size, epsilon=1e-5):
+        self.input_size = int(input_size)
+        self.epsilon = float(epsilon)
+
+        # Learnable affine params (gamma, beta), shape (F,)
+        self._W = tf.Variable(
+            tf.ones((self.input_size,), dtype=tf.float32),  # gamma
+            trainable=True,
+            name="gamma",
+        )
+        self._b = tf.Variable(
+            tf.zeros((self.input_size,), dtype=tf.float32),  # beta
+            trainable=True,
+            name="beta",
+        )
+
+    def __call__(self, x):
+        """
+        Apply LayerNorm across the feature dimension for each sample.
+        Args:
+            x: (N, F) tensor
+        Returns:
+            (N, F) tensor
+        """
+        x = tf.convert_to_tensor(x, dtype=tf.float32)
+
+        # Per-sample stats across features
+        mean = tf.reduce_mean(x, axis=-1, keepdims=True)  # (N, 1)
+        var = tf.math.reduce_variance(x, axis=-1, keepdims=True)  # (N, 1)
+
+        x_hat = (x - mean) / tf.sqrt(var + self.epsilon)  # (N, F)
+
+        # Affine transform (broadcast (F,) over batch)
+        return x_hat * self._W + self._b
+
+    # ---- Compatibility with your original API ----
+    @property
+    def parameters(self):
+        return [self._W, self._b]
+
+    @property
+    def W(self):  # gamma
+        return self._W
+
+    @W.setter
+    def W(self, value):
+        value = tf.convert_to_tensor(value, dtype=tf.float32)
+        if value.shape != self._W.shape:
+            raise ValueError(f"W shape {value.shape} != {self._W.shape}")
+        self._W.assign(value)
+
+    @property
+    def b(self):  # beta
+        return self._b
+
+    @b.setter
+    def b(self, value):
+        value = tf.convert_to_tensor(value, dtype=tf.float32)
+        if value.shape != self._b.shape:
+            raise ValueError(f"b shape {value.shape} != {self._b.shape}")
+        self._b.assign(value)
+
+
 # Test the Linear layer implementation
 if __name__ == "__main__":
     # layer = Linear(input_size=3, output_size=2, activation="Sigmoid")
@@ -248,13 +320,13 @@ if __name__ == "__main__":
     # print("Weights shape:", layer.W.shape)
     # print("Biases:\n", layer.b.numpy())
     # Create a BatchNormalization layer for 3 features
-    layer = BatchNormalization(input_size=3)
+    layer = LayerNormalization(input_size=3)
 
     # Random input: 4 samples, 3 features
-    x = tf.random.normal((4, 3), mean=5.0, stddev=2.0)
+    x = tf.random.normal(mean=5.0, stddev=2.0, shape=(4, 3))
 
     # Forward pass (training mode)
-    output = layer(x, training=True)
+    output = layer(x)
 
     print("Input:\n", x.numpy())
     print("Output (normalized):\n", output.numpy())
@@ -262,5 +334,3 @@ if __name__ == "__main__":
     print("Gamma shape:", layer.W.shape)
     print("Beta (b):\n", layer.b.numpy())
     print("Beta shape:", layer.b.shape)
-    print("Moving mean:\n", layer.moving_mean.numpy())
-    print("Moving var:\n", layer.moving_var.numpy())
