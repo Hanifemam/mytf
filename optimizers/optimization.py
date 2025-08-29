@@ -251,6 +251,7 @@ optimizer = Optimization(
     loss_function=MSELoss,
     learning_rate=0.01,
     learning_rate_type="Adam",
+    regularizer="l2",
 )
 final_params = optimizer.SGD()
 
