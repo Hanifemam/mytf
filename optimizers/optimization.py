@@ -31,6 +31,9 @@ class Optimization:
         loss_function,
         learning_rate,
         learning_rate_type="constant",
+        soft_weight_sharing=False,
+        decay=0.1,
+        components=3,
     ):
         self.model = model
         self.X = X
@@ -39,6 +42,11 @@ class Optimization:
         self.loss_function = loss_function
         self.learning_rate = learning_rate
         self.learning_rate_type = learning_rate_type
+        self.is_soft_weight_sharing = soft_weight_sharing
+        if self.is_soft_weight_sharing:
+            self.decay = decay
+            self.components = components
+            self.soft_weight_sharing = SoftWeightSharing(components)
 
     def SGD(self):
         """
@@ -59,6 +67,10 @@ class Optimization:
             with tf.GradientTape() as tape:
                 prediction = self.model(self.X)
                 loss = self.loss_function(prediction, self.y)
+                if self.is_soft_weight_sharing:
+                    loss += self.soft_weight_sharing(
+                        self.decay, self.model.parameters()
+                    )
 
             parameters = self.model.parameters()
             grads = tape.gradient(loss, parameters)
@@ -238,6 +250,39 @@ class Optimization:
         return learning_rate_correction
 
 
+import numpy as np
+import tensorflow as tf
+
+
+class SoftWeightSharing(tf.Module):
+    def __init__(self, components):
+        super().__init__()
+        K = int(components)
+
+        # mixture parameters (trainable)
+        self.mu = tf.Variable(tf.linspace(-1.0, 1.0, K), name="sws_mu")
+        self.log_sigma = tf.Variable(
+            tf.math.log(tf.ones([K]) * 0.5), name="sws_log_sigma"
+        )
+        self.logits = tf.Variable(tf.zeros([K]), name="sws_logits")
+
+    def __call__(self, decay, params):
+        w = tf.concat([tf.reshape(p, [-1]) for p in params], axis=0)  # [N]
+        w = tf.expand_dims(w, -1)  # [N,1]
+
+        mu = tf.expand_dims(self.mu, 0)  # [1,K]
+        sigma2 = tf.exp(2.0 * self.log_sigma)[tf.newaxis, :]  # [1,K]
+        log_pi = tf.nn.log_softmax(self.logits)[tf.newaxis, :]  # [1,K]
+
+        log_norm = -0.5 * (np.log(2 * np.pi) + tf.math.log(sigma2))
+        log_exp = -0.5 * tf.square(w - mu) / sigma2
+        log_comp = log_norm + log_exp  # [N,K]
+
+        log_mix = tf.reduce_logsumexp(log_pi + log_comp, axis=-1)  # [N]
+        nll = -tf.reduce_sum(log_mix)  # scalar
+        return decay * nll
+
+
 X = tf.random.normal((10, 3))
 y = tf.random.normal((10, 1))
 
@@ -250,8 +295,6 @@ optimizer = Optimization(
     epochs=10,
     loss_function=MSELoss,
     learning_rate=0.01,
-    learning_rate_type="Adam",
-    regularizer="l2",
 )
 final_params = optimizer.SGD()
 
