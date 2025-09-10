@@ -17,7 +17,7 @@ class Linear:
         _b (tf.Variable): The bias vector of shape (output_size,).
     """
 
-    def __init__(self, input_size, output_size, activation="ReLU"):
+    def __init__(self, input_size, output_size, activation="ReLU", residual=False):
         """
         Initializes the Linear layer with random weights and biases.
 
@@ -43,6 +43,7 @@ class Linear:
             trainable=True,
             name="bias",
         )
+        self.residual = residual
 
     def __call__(self, x):
         """
@@ -77,7 +78,10 @@ class Linear:
         """
         if not isinstance(x, tf.Tensor):
             x = tf.convert_to_tensor(x, dtype=tf.float32)
-        return tf.matmul(x, self._W) + self._b
+        if self.residual:
+            return tf.matmul(x, self._W) + self._b + x
+        else:
+            return tf.matmul(x, self._W) + self._b
 
     @property
     def parameters(self):

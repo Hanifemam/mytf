@@ -1,5 +1,6 @@
-from .activations import ReLU, Sigmoid, Tanh, LeakyReLU, Softmax
-from .feedforward import Linear
+import tensorflow as tf
+from activations import ReLU, Sigmoid, Tanh, LeakyReLU, Softmax
+from feedforward import Linear
 
 
 class Sequence:
@@ -10,7 +11,7 @@ class Sequence:
     enabling the construction of complex neural network architectures.
     """
 
-    def __init__(self, *layers):
+    def __init__(self, residual=False, *layers):
         """
         Initializes the Sequence with a list of layers.
 
@@ -18,6 +19,7 @@ class Sequence:
             *layers: Variable number of layer instances to be included in the sequence.
         """
         self.layers = layers
+        self.residual = residual
 
     def __call__(self, x):
         """
@@ -33,7 +35,10 @@ class Sequence:
             if not callable(layer):
                 raise TypeError(f"Layer {layer} must be callable")
             else:
-                x = layer(x)
+                if layer is Linear:
+                    x = layer(x, self.residual)
+                else:
+                    x = layer(x)
         print(x)
         return x
 
@@ -62,4 +67,17 @@ class Sequence:
 
 
 print("TEST")
-model = Sequence(Linear(3, 4), ReLU(), Linear(4, 1), Sigmoid())
+# Dummy input
+x = tf.random.normal((2, 3))  # batch of 2, input size 3
+
+print("Without residual:")
+model_nores = Sequence(
+    False, Linear(3, 4), ReLU(), Linear(4, 3)
+)  # output matches input dim
+out1 = model_nores(x)
+print("Output shape:", out1.shape)
+
+print("\nWith residual:")
+model_res = Sequence(True, Linear(3, 4), ReLU(), Linear(4, 3))  # residual path possible
+out2 = model_res(x)
+print("Output shape:", out2.shape)

@@ -295,6 +295,9 @@ optimizer = Optimization(
     epochs=10,
     loss_function=MSELoss,
     learning_rate=0.01,
+    soft_weight_sharing=True,
+    decay=0.001,
+    components=2,
 )
 final_params = optimizer.SGD()
 
