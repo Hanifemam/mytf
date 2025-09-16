@@ -86,7 +86,7 @@ class Linear:
 
         # Residual: only valid if shapes match
         if self.residual:
-            if self.in_features != self.out_features:
+            if x.shape != y.shape:
                 raise ValueError(
                     f"Residual requires in==out, got {self.in_features}!={self.out_features}"
                 )
